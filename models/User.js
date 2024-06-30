@@ -7,8 +7,11 @@ const UserSchema = new Schema({
   last_name: { type: String, required: true, maxLength: 100 },
   username: { type: String, unique: true, required: true, maxLength: 20 },
   email: { type: String, unique: true, required: true, maxLength: 20 },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
   // maxLength wont matter on password because I will only store the bycrypt hashed version
+  // isMember: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
+  membership: { type: Schema.Types.ObjectId, required: true, ref: 'MembershipType' }
 }, {timestamps: true});
 
 UserSchema.virtual('full_name').get(function() {

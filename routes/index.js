@@ -41,6 +41,14 @@ router.get('/log-out', () => {
   // in the future, I'd like a 'log out all sessions', but this should require a more complex implementation
 })
 
+// new?
+// debating /messages/:messageId vs groups/:groupId/messages/:messageId
+// seems like the group is unncessary, but maybe it imporves readility
+router.delete('', asyncHandler((req, res, next) => {
+    const messageId = req.params.messageId;
+  })
+)
+
 
 
 export default router;
