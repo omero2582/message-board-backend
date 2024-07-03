@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { signJWT, getUserBasic } from '../helpers/helpers.js';
 import { authOptional, authMandatory } from '../middleware/authMiddleware.js';
 import { login, signup } from '../controllers/authController.js';
+import { createMessage, deleteMesssage } from '../controllers/messageController.js';
 
 const router = express.Router();
 
@@ -43,12 +44,26 @@ router.get('/log-out', () => {
 
 // new?
 // debating /messages/:messageId vs groups/:groupId/messages/:messageId
-// seems like the group is unncessary, but maybe it imporves readility
-router.delete('', asyncHandler((req, res, next) => {
-    const messageId = req.params.messageId;
-  })
+// groupId is unncessary to specify since we will need to grab this from message itself,
+// but maybe it improves readility
+router.delete('messages/:messageId',
+  authMandatory,
+  asyncHandler(deleteMesssage)
 )
 
+router.post('messages/',
+  authMandatory,
+  asyncHandler(createMessage)
+)
 
+router.post('groups/',
+  authMandatory,
+  asyncHandler(createGroup)
+)
+
+router.post('groups/',
+  authMandatory,
+  asyncHandler(createMessage)
+)
 
 export default router;

@@ -1,7 +1,8 @@
 import '../config/database.js';
 import MembershipType from "../models/MembershipType.js";
 import Group from '../models/Group.js';
-
+import * as dotenv from 'dotenv'
+dotenv.config();
 
 async function createMemeberships() {
   const memberships = [
@@ -39,5 +40,11 @@ async function createGlobalGroup() {
 }
 
 
+async function findGlobalGroup(){
+  const globalGroup = await Group.findById(process.env.GLOBAL_GROUP_ID);
+  console.log(globalGroup);
+}
+
 // await createMemeberships();
-await createGlobalGroup();
+// await createGlobalGroup();
+await findGlobalGroup();
