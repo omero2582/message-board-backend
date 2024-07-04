@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import { signJWT } from '../helpers/helpers.js';
 import bcrypt from 'bcryptjs'
 import { body, validationResult, matchedData } from "express-validator";
+import { allMemberships } from '../config/database.js';
 
 export async function login(req, res, next) {
   const errors = validationResult(req);
@@ -29,7 +30,7 @@ export async function login(req, res, next) {
 
 };
 
-export async function signup() {
+export async function signup(req, res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.json({errors: errors.array()});
@@ -53,7 +54,8 @@ export async function signup() {
         last_name,
         username,
         password: hashedPassword,
-        email
+        email,
+        membership: allMemberships.find(m => m.tier === 0),
       });
       const user = await newUser.save();
       const token_jwt = signJWT(user);

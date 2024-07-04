@@ -1,6 +1,6 @@
 import '../config/database.js';
 import MembershipType from "../models/MembershipType.js";
-import Group from '../models/Group.js';
+import Chat from '../models/Chat.js';
 import * as dotenv from 'dotenv'
 dotenv.config();
 
@@ -26,25 +26,26 @@ async function createMemeberships() {
 
 async function createGlobalGroup() {
 
-  try {
-    const newGroup = new Group({
-      isGlobal: true,
-      name: 'Global'
-    })
-    const group = await newGroup.save();
-    console.log('created ' + group)
-  } catch (err) {
-    console.log('error creating global group', err);
-  }
-
+  const newGroup = new Chat({
+    isGlobal: true,
+    name: 'Global'
+  })
+  const group = await newGroup.save();
+  console.log('created ' + group);
+  return newGroup;
 }
 
 
 async function findGlobalGroup(){
-  const globalGroup = await Group.findById(process.env.GLOBAL_GROUP_ID);
+  const globalGroup = await Chat.findById(process.env.GLOBAL_GROUP_ID);
   console.log(globalGroup);
 }
 
 // await createMemeberships();
-// await createGlobalGroup();
-await findGlobalGroup();
+const newGroup = new Chat({
+  name: 'Test2',
+  isGlobal: true,
+})
+console.log(newGroup);
+const group = await newGroup.save();
+console.log(group);

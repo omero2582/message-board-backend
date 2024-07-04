@@ -1,25 +1,24 @@
 import mongoose from "mongoose";
-import User from "./User";
-import Group from "./Group";
+import Chat from "./Chat.js";
 
 const Schema = mongoose.Schema;
 
 const MessageSchema = new Schema({
-  sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   content: { type: String, required: true },
-  recipients: [{ type: Schema.Types.ObjectId, ref: 'User'}],
-  group: { type: Schema.Types.ObjectId, ref: 'Group' },
+  sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  chat: { type: Schema.Types.ObjectId, ref: 'Chat', required: true },
+  // recipients: [{ type: Schema.Types.ObjectId, ref: 'User'}],
 }, {
   timestamps: true,
-  validate: {
-    validator: function () {
-      // Check that either recipients or group is provided, but not both
-      const hasRecipients = this.recipients && this.recipients.length > 0;
-      const hasGroup = this.group != null;
-      return (hasRecipients || hasGroup) && !(hasRecipients && hasGroup);
-    },
-    message: 'Either recipients or group must be provided, but not both.'
-  }
+  // validate: {
+  //   validator: function () {
+  //     // Check that either recipients or group is provided, but not both
+  //     const hasRecipients = this.recipients && this.recipients.length > 0;
+  //     const hasGroup = this.group != null;
+  //     return (hasRecipients || hasGroup) && !(hasRecipients && hasGroup);
+  //   },
+  //   message: 'Either recipients or group must be provided, but not both.'
+  // }
 })
 
 // MessageSchema.path('recipients').validate(function (value) {
@@ -42,16 +41,38 @@ const MessageSchema = new Schema({
 //   next();
 // });
 
-
-MessageSchema.post('validate', async function (next) {
-  const groupFound = await Group.findById(group);
-  if(!groupFound){
-    const err = new Error('Group not Found');
+// MessageSchema.post('validate', async function (doc, next) {
+MessageSchema.pre('save', async function (next) {
+  const chatFound = await Chat.findById(this.chat);
+  if(!chatFound){
+    const err = new Error('Chat not Found');
     err.status = 404;
     return next(err);
   }
+
+  const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
+  if(!isSenderInChat){
+    const err = new Error('User is not a Member of this Chat');
+    err.status = 403;
+    return next(err);
+  }
+
   next();
 });
+
+// MessageSchema.pre('deleteOne', async function (next){
+//   const chatFound = await Chat.findById(this.chat);
+//   const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
+//   if(!isSenderInChat){
+//     const err = new Error('User is not a Member of this Chat');
+//     err.status = 403;
+//     return next(err);
+//   }
+
+//   next();
+// })
+// this needs to be incontroller function, because for example, and admin (not sender)
+// might want to delete a mesage
 
 const Message = mongoose.model('Message', MessageSchema);
 export default Message;
