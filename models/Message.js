@@ -43,6 +43,7 @@ const MessageSchema = new Schema({
 
 // MessageSchema.post('validate', async function (doc, next) {
 MessageSchema.pre('save', async function (next) {
+  // Does chat exist
   const chatFound = await Chat.findById(this.chat);
   if(!chatFound){
     const err = new Error('Chat not Found');
@@ -50,11 +51,14 @@ MessageSchema.pre('save', async function (next) {
     return next(err);
   }
 
-  const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
-  if(!isSenderInChat){
-    const err = new Error('User is not a Member of this Chat');
-    err.status = 403;
-    return next(err);
+  // Are they a member of this chat or is the chat global
+  if (!chatFound.isGlobal){
+    const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
+    if(!isSenderInChat){
+      const err = new Error('User is not a Member of this Chat');
+      err.status = 403;
+      return next(err);
+    }
   }
 
   next();

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 const ChatSchema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String },
   members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   isGlobal: { type: Boolean, default: false },
   isGroupChat: { type: Boolean, default: false }

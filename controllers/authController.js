@@ -5,11 +5,6 @@ import { body, validationResult, matchedData } from "express-validator";
 import { allMemberships } from '../config/database.js';
 
 export async function login(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.json({errors: errors.array()});
-  }
-  
   const {username, password} = matchedData(req);
   
   try {
@@ -31,11 +26,6 @@ export async function login(req, res, next) {
 };
 
 export async function signup(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.json({errors: errors.array()});
-  }
-  
   // const {first_name, last_name, username, password} = req.body;
   const {first_name, last_name, username, password, email} = matchedData(req);
   //same as above but extra layer ensures ONLY data the apssed vlidation sanitation is here
