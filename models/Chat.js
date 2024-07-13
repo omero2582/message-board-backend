@@ -9,42 +9,41 @@ const ChatSchema = new Schema({
     _id: false,
     user: { type: Schema.Types.ObjectId, ref: 'User'},
     totalUnread: { type: Number, default: 0 },
+    // nice to have 'totalUnread'here, so that when a user sends a new message,
+    // I can easily add 1 to the total unread of every member
   }],
   isGlobal: { type: Boolean, default: false },
   isGroupChat: { type: Boolean, default: false }
 }, {
   methods : {
     isMemberInGroup(userId) {
-      return this.isGlobal || this.members.some(m => m.user.id === userId);
+      const out = this.isGlobal || this.members.some(m => m.user.equals(userId));
+      return out;
     }
   },
   statics: {
-    // TODO gonna change these static methods to be outside in a
-    // controllet function. The initial reason these are static methods
-    // instead of instance methods
-    // is because Chat.findByIdAndUpdate would be ran without a reference
-    // to any instance. However the problem I now have, is that
-    // I realize $addToSet, which adds only if object doesnt already exist,
-    // does not allow for us to check any custom conditions, it will
-    // instead always check if the entire object inputted already exists.
-    // So our code below doesnt work (tested already), because
-    // It detects 'hey is there any user object in the members array
-    // that is exatcly {id: 123} ? ' And this will skip over
-    // {id: 123, totalUnread: 2}
-
-    // Overall, I think I no longer want to leave these functions as
-    // neither static nor instance methods, because depending on any
-    // slight customization we want to make to our logic, these functions
-    // can change between needing to be ran as static and instance
     async addUserToChat(userId, chatId) {
+      const chat = await Chat.findById(chatId);
+      if(chat.isMemberInGroup(userId)){
+        throw new Error('user already in this Chat');
+      }
+      // user not in chat
+      const user = await User.findById(userId);
+      if(!user){
+        throw new Error('user doesnt exist')
+      }
+      user.chats.push({ id: chatId })
+      chat.members.push({ user: userId });
       await runTransaction(async() => {
-        await Chat.findByIdAndUpdate(chatId, {  
-          $addToSet: { members: { user: userId } } 
-        });
-        await User.findByIdAndUpdate(userId, {  
-          $addToSet: { chats: { ids: chatId } } 
-        });
+        await chat.save();
+        await user.save();
       })
+        // await Chat.findByIdAndUpdate(chatId, {  
+        //   $addToSet: { members: { user: userId } } 
+        // });
+        // await User.findByIdAndUpdate(userId, {  
+        //   $addToSet: { chats: { id: chatId } } 
+        // });
     },
     async removeUserFromChat(userId, chatId) {
       await runTransaction(async() => {
@@ -97,7 +96,3 @@ async function runTransaction(transactionCallback) {
 
 const Chat = mongoose.model('Chat', ChatSchema);
 export default Chat;
-
-// TODO add another chat rule....
-// if member is already in the array, then dont add them and maybe
-// send error...

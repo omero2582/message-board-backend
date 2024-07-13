@@ -4,7 +4,8 @@ import asyncHandler from 'express-async-handler';
 import { signJWT, getUserBasic } from '../helpers/helpers.js';
 import { authOptional, authMandatory } from '../middleware/authMiddleware.js';
 import { login, signup } from '../controllers/authController.js';
-import { createChat, createMessage, deleteMesssage, getChat, getChatMessages } from '../controllers/messageController.js';
+import { createMessage, deleteMesssage, } from '../controllers/messageController.js';
+import { createChat, getChat, getChatMessages } from '../controllers/chatController.js';
 
 const router = express.Router();
 
