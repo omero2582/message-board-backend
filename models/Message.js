@@ -7,6 +7,13 @@ const MessageSchema = new Schema({
   content: { type: String, required: true },
   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   chat: { type: Schema.Types.ObjectId, ref: 'Chat', required: true },
+  readBy: {
+    type: [{ 
+      user: { type: Schema.Types.ObjectId, ref: 'User' }, 
+      timestampRead: { type: Date, default: () => Date.now()}
+    }],
+    default: [],
+  } ,
   // recipients: [{ type: Schema.Types.ObjectId, ref: 'User'}],
 }, {
   timestamps: true,
@@ -53,7 +60,7 @@ MessageSchema.pre('save', async function (next) {
 
   // Are they a member of this chat or is the chat global
   if (!chatFound.isGlobal){
-    const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
+    const isSenderInChat = chatFound.members.some(m => m.user.id === this.sender.id);
     if(!isSenderInChat){
       const err = new Error('User is not a Member of this Chat');
       err.status = 403;

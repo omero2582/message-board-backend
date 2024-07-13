@@ -47,10 +47,17 @@ export async function getChat(req, res, next) {
 
 export async function createChat(req, res, next) {
   const { name, members, isGroupChat, isGlobal } = matchedData(req);
+  // member will come in as [123, 2342, 35], but now Schema has the form
+  // [{user, total_unread}], so adjusting schema input below
+  const membersIn = members.map(m => {
+    return {
+      user: m,
+    }
+  })
 
   const newChat = new Chat({
     name,
-    members,
+    members: membersIn,
     isGroupChat,
     isGlobal
   });

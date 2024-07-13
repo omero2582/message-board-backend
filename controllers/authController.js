@@ -26,8 +26,8 @@ export async function login(req, res, next) {
 };
 
 export async function signup(req, res, next) {
-  // const {first_name, last_name, username, password} = req.body;
-  const {first_name, last_name, username, password, email} = matchedData(req);
+  // const {firstName, lastName, username, password} = req.body;
+  const {firstName, lastName, username, password, email} = matchedData(req);
   //same as above but extra layer ensures ONLY data the apssed vlidation sanitation is here
 
 
@@ -40,8 +40,8 @@ export async function signup(req, res, next) {
     
     try {
       const newUser = new User({
-        first_name,
-        last_name,
+        firstName,
+        lastName,
         username,
         password: hashedPassword,
         email,

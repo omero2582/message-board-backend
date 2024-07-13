@@ -23,8 +23,8 @@ router.get('/protected',
 )
 
 router.post('/sign-up',
-  body("first_name", "First Name must be specified").trim().isLength({min: 1}).escape(),
-  body("last_name", "Last Name must be specified").trim().isLength({min: 1}).escape(),
+  body("firstName", "First Name must be specified").trim().isLength({min: 1}).escape(),
+  body("lastName", "Last Name must be specified").trim().isLength({min: 1}).escape(),
   body("username", "Username must be specified").trim().isLength({min: 1}).escape(),
   body("password", "Password must be specified").trim().isLength({min: 1}).escape(),
   body("email", "Email must be specified").trim().isLength({min: 1}).isEmail().withMessage("Invalid Email Format").escape(),

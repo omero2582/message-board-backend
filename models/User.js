@@ -3,20 +3,23 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
-  first_name: { type: String, required: true, maxLength: 100 },
-  last_name: { type: String, required: true, maxLength: 100 },
+  firstName: { type: String, required: true, maxLength: 100 },
+  lastName: { type: String, required: true, maxLength: 100 },
   username: { type: String, unique: true, required: true, maxLength: 20 },
   email: { type: String, unique: true, required: true, maxLength: 20 },
   password: { type: String, required: true },
   // maxLength wont matter on password because I will only store the bycrypt hashed version
-  // isMember: { type: Boolean, default: false },
+  membership: { type: Schema.Types.ObjectId, required: true, ref: 'MembershipType' },
   isAdmin: { type: Boolean, default: false },
-  membership: { type: Schema.Types.ObjectId, required: true, ref: 'MembershipType' }
+  chats: { 
+    ids: [{ type: Schema.Types.ObjectId, ref: 'Chat' }],
+    isOpened: { type: Boolean, default: true },
+  }
 }, {timestamps: true});
 
-UserSchema.virtual('full_name').get(function() {
-  const firstName = this.first_name || '';
-  const lastName = this.last_name || '';
+UserSchema.virtual('fullName').get(function() {
+  const firstName = this.firstName || '';
+  const lastName = this.lastName || '';
   return `${firstName} ${lastName}`.trim();
 })
 
