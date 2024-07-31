@@ -21,5 +21,26 @@ async function getAllMemberships (){
   return out;
 }
 
+//  https://www.mongodb.com/docs/drivers/node/current/fundamentals/transactions/
+//  https://mongoosejs.com/docs/transactions.html
+export async function runTransaction(session, transactionCallback) {
+  // this fn assumes that you called const session = await mongoose.startSession();
+  // and passed this session in as an argument
+  try {
+    session.startTransaction();
+  
+    await transactionCallback();
+
+    await session.commitTransaction();
+    
+  } catch (error) {
+    // Abort the transaction
+    await session.abortTransaction();
+    console.log('ABORTING TRANSACTION', error);
+  } finally {
+    await session.endSession();
+  }
+}
+
 await dbStart();
 export const allMemberships = await getAllMemberships();

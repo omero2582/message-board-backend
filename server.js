@@ -16,6 +16,7 @@ const app = express();
 
 app.use(express.json());
 
+// other routers, then
 app.use('/', indexRouter);
 
 app.use((err, req, res, next) => {
@@ -29,9 +30,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 const hostname = '0.0.0.0';
 
-app.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+// app.listen(port, hostname, () => {
+//   console.log(`Server running at http://${hostname}:${port}/`);
+// });
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
