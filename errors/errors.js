@@ -1,7 +1,9 @@
 export class CustomError extends Error {
-  constructor(message, object = {}){
+  // constructor(message, object){
+  constructor(message, {statusCode, ...object}){
     super(message);
     Object.assign(this, object);
+    this.statusCode = statusCode;
     // this.isOperational = true; Not sure if should add this,
     // basically marks it as a 'known caught error'
     // to differentiate it from an unknown thrown error that

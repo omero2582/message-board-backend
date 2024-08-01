@@ -1,5 +1,5 @@
 export const errorHandler = (err, req, res, next) => {
-  console.error('Catch-all error handler', err);
+  console.error('Catch-all error handler', err, '======================= err handler end');
   res.status(err.statusCode || 500)
     .json({
       error: {

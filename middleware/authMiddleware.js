@@ -1,22 +1,25 @@
 import passport from "passport";
 import asyncHandler from 'express-async-handler';
-
-// TODO wrap these in asynchandler
+import { CustomError } from "../errors/errors.js";
 
 // export const authMandatory = asyncHandler(async (req, res, next) => {
 //   passport.authenticate( "jwt", {session: false})(req, res, next);
 // });
+export const authMandatory = asyncHandler(async (req, res, next) => {
+  passport.authenticate( "jwt", {session: false}, (err, user, info) => {
+    if (err) {
+      return next(err);
+    }
+    if (user) {
+      req.user = user;
+      next();
+    } else {
+      throw new CustomError('Unauthorized', {statusCode: 401})
+    }
+  })(req, res, next);
+});
 
-export async function authMandatory (req, res, next) {
-  passport.authenticate( "jwt", {session: false})(req, res, next);
-};
-// export function authMandatory(req, res, next) {
-//   asyncHandler(async () => {
-//     passport.authenticate("jwt", { session: false })(req, res, next);
-//   })(req, res, next);
-// }
-
-export async function authOptional (req, res, next) {
+export const authOptional = asyncHandler(async (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
       return next(err);
@@ -26,7 +29,7 @@ export async function authOptional (req, res, next) {
     }
     next();
   })(req, res, next);
-}
+})
 
 // new conditional membership tiers. Use this on top of one of the check above
 

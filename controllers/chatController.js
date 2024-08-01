@@ -2,16 +2,16 @@ import Chat from "../models/Chat.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { matchedData } from "express-validator";
-import { runTransaction } from "../config/database.js";
 import mongoose from "mongoose";
 import { CustomError } from "../errors/errors.js";
+import asyncHandler from 'express-async-handler';
 
-export async function getChatMessages(req, res, next) {
+export const getChatMessages = asyncHandler(async (req, res) => {
   const { chatId } = matchedData(req);
 
   const chat = await Chat.findById(chatId);
   if(!chat){
-    return res.status(404).json({error: 'Chat not found'})
+    throw new CustomError('Chat not found', {statusCode: 404});
   }
 
   // Permissions
@@ -19,27 +19,21 @@ export async function getChatMessages(req, res, next) {
   if(!req.user.isAdmin){
     const isMemberInGroup = chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      return res.status(401).json({error: 'User does not belong to this group'})
+      throw new CustomError('User does not belong to this group', {statusCode: 401});
     }
   }
 
   // Otherwise, success
   const chatMessages = await Message.find({ chat: chatId }).sort({createdAt: -1});
   return res.json({ chat: chatMessages });
-}
+});
 
-export async function getChat(req, res, next) {
+export const getChat = asyncHandler(async (req, res) => {
   const { chatId } = matchedData(req);
 
   const chat = await Chat.findById(chatId);
   if(!chat){
     throw new CustomError('Chat not found', {statusCode: 404});
-    
-    // return res.status(404).json({error: 'Chat not found'});
-    // const err = new Error('Chat not found');
-    // err.statusCode = 404;
-    // throw err;
-
   }
 
   // Permissions
@@ -47,15 +41,15 @@ export async function getChat(req, res, next) {
   if(!req.user.isAdmin){
     const isMemberInGroup = chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      return res.status(401).json({error: 'User does not belong to this group'})
+      throw new CustomError('User does not belong to this group', {statusCode: 401});
     }
   }
 
   // Otherwise, success
   return res.json({ chat });
-}
+});
 
-export async function createChat(req, res, next) {
+export const createChat = asyncHandler(async (req, res) => {
   const { name, members, isGroupChat, isGlobal } = matchedData(req);
   // member will come in as [123, 2342, 35], but now Schema has the form
   // [{user, total_unread}], so adjusting schema input below
@@ -74,21 +68,25 @@ export async function createChat(req, res, next) {
 
   const chat = await newChat.save();
   return res.json({ chat });
-}
+});
 
 //
 //
-export async function addUserToChat(userId, chatId) {
-// export async function addUserToChat(req, res, next) {
-  // const {userId, chatId} = matchedData(req);
+// TODO I'm currently swapping back and forth the commented 1-2 lines below for testing. Switch to express testing library
+// export async function addUserToChat(userId, chatId) {
+export const addUserToChat = asyncHandler(async (req, res) => {
+  const {userId, chatId} = matchedData(req);
   const chat = await Chat.findById(chatId);
+
+  // any permissions for this???
+
   if(chat.isMemberInGroup(userId)){
-    throw new Error('user already in this Chat');
+    throw new CustomError('User is already in this Chat', {statusCode: 409});
   }
   // user not in chat
   const user = await User.findById(userId);
   if(!user){
-    throw new Error('user doesnt exist')
+    throw new CustomError('User doesnt exist', {statusCode: 404});
   }
   user.chats.push({ id: chatId })
   chat.members.push({ user: userId });
@@ -106,7 +104,7 @@ export async function addUserToChat(userId, chatId) {
   } finally {
     session.endSession();
   }
-}
+});
   // Can maybe make a helper for above, similar to our runTransaction helper,
   // But I want each transaction to handle each error differently so they can send a response...
   // So if we WERE to make a helper, we'd need the helper to rethrow the error
@@ -129,9 +127,9 @@ export async function addUserToChat(userId, chatId) {
   
 
 //TODO
-export async function removeUserFromChat(userId, chatId) {
-// export async function removeUserFromChat(req, res, next) {
-//   const {userId, chatId} = matchedData(req);  
+// export async function removeUserFromChat(userId, chatId) {
+export const removeUserFromChat = asyncHandler(async (req, res) => {
+  const {userId, chatId} = matchedData(req);  
   // await runTransaction(async() => {
   //   await Chat.findByIdAndUpdate(chatId, { 
   //     $pull: { members: { user: userId } } 
@@ -140,6 +138,8 @@ export async function removeUserFromChat(userId, chatId) {
   //     $pull: { chats: { ids: chatId } }
   //    });
   // })
+
+  // Permissions???
 
   // Transaction
   const session = await mongoose.startSession();
@@ -154,8 +154,16 @@ export async function removeUserFromChat(userId, chatId) {
     });
   } catch (error) {
     const {message, errors, stack} = error;
-    console.error('ABORTING TRANSACTION', message);
+    console.error('ABORTING TRANSACTION', 'Error Finding and Removing Chat or User in Transaction');
+    throw new CustomError(message, {
+      name: 'TransactionError',
+      statusCode: 500
+    });
+    // TODO test above. The correct flow should be:
+    // catches error, then throws Custom error, then before propagating out of this fn,
+    // it runs the finally block, and then it propagates
   } finally {
+    console.log('finally');
     session.endSession();
   }
-}
+})

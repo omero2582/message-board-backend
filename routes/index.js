@@ -19,16 +19,16 @@ async function checkValidationErrors(req, res, next){
 
 router.get('/',
   authOptional,
-  async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     res.json({messsage:`success`, user: getUserBasic(req.user)})
-  }
+  })
 )
 
 router.get('/protected',
   authMandatory,
-  async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     res.json({messsage:`success`, user: getUserBasic(req.user)})
-  }
+  })
 )
 
 router.post('/sign-up',
@@ -38,14 +38,14 @@ router.post('/sign-up',
   body("password", "Password must be specified").trim().isLength({min: 1}).escape(),
   body("email", "Email must be specified").trim().isLength({min: 1}).isEmail().withMessage("Invalid Email Format").escape(),
   checkValidationErrors,
-  asyncHandler(signup)
+  signup
 );
 
 router.post('/log-in', 
   body("username", "Username must be specified").trim().isLength({min: 1}).escape(),
   body("password", "Password must be specified").trim().isLength({min: 1}).escape(),
   checkValidationErrors,
-  asyncHandler(login)
+  login
 );
 
 router.get('/log-out', () => {
@@ -59,7 +59,7 @@ router.get('/log-out', () => {
 router.delete('/messages/:messageId',
   param("messageId").isMongoId().withMessage('Invalid messageId format').escape(),
   authMandatory,
-  asyncHandler(deleteMesssage)
+  deleteMesssage
 )
 
 router.post('/chats/',
@@ -93,7 +93,7 @@ router.post('/chats/:chatId/messages/',
   param("chatId").isMongoId().withMessage('Invalid chatId format').escape(),
   checkValidationErrors,
   authMandatory,
-  asyncHandler(createMessage)
+  createMessage
 )
 export default router;
 

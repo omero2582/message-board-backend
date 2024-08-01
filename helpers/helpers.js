@@ -11,6 +11,8 @@ export function signJWT(user){
 }
 
 export function getUserBasic(user){
+  if(!user) return undefined;
+
   const {username, email, id} = user;
   return {username, email, id}
 }

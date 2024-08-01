@@ -1,8 +1,10 @@
 import Chat from "../models/Chat.js";
 import Message from "../models/Message.js";
 import { matchedData } from "express-validator";
+import asyncHandler from 'express-async-handler';
+import { CustomError } from "../errors/errors.js";
 
-export async function createMessage(req, res, next){
+export const createMessage = asyncHandler(async (req, res, next) => {
   const { content, chatId } = matchedData(req);
 
   const newMesasge = new Message({
@@ -15,9 +17,9 @@ export async function createMessage(req, res, next){
   
   const message = await newMesasge.save();
   return res.json({message});
-}
+});
 
-export async function deleteMesssage(req, res, next) {
+export const deleteMesssage = asyncHandler(async (req, res, next) => {
   const { messageId } = matchedData(req);
 
   const message = await Message.findById(messageId).populate({
@@ -29,7 +31,7 @@ export async function deleteMesssage(req, res, next) {
   });
   
   if(!message){
-    return res.status(404).json({error: 'Message not found'})
+    throw new CustomError("Message not Found", {statusCode: 404} );
   }
 
   // Permissions
@@ -37,12 +39,12 @@ export async function deleteMesssage(req, res, next) {
   if(!req.user.isAdmin){
     const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      return res.status(401).json({error: 'User does not belong to this group'})
+      throw new CustomError('User does not belong to this group', {statusCode: 401});
     }
 
     const isSender = req.user.id === message.sender.toString();
     if(!isSender){
-      return res.status(401).json({error: 'User is not the sender of this message'})
+      throw new CustomError('User is not the sender of this message', {statusCode: 401});
     }
   }
 
@@ -56,7 +58,7 @@ export async function deleteMesssage(req, res, next) {
   //       "deletedCount": 1
   //   }
   // }
-}
+});
 
 
 
