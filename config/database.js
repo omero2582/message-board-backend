@@ -21,9 +21,23 @@ async function getAllMemberships (){
   return out;
 }
 
+// no longer using this function below... not needed 
+// instead use somthing like
+// const session = await mongoose.startSession();
+//   try {
+//     await session.withTransaction(async () => {
+//         await chat.save({ session });
+//         await user.save({ session });
+//     });
+//   } catch (error) {
+//     const {message, errors, stack} = error;
+//     console.error('ABORTING TRANSACTION', message);
+//   } finally {
+//     session.endSession();
+//   }
 //  https://www.mongodb.com/docs/drivers/node/current/fundamentals/transactions/
 //  https://mongoosejs.com/docs/transactions.html
-export async function runTransaction(session, transactionCallback) {
+async function runTransaction(session, transactionCallback) {
   // this fn assumes that you called const session = await mongoose.startSession();
   // and passed this session in as an argument
   try {

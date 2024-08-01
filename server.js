@@ -6,6 +6,7 @@ import indexRouter from './routes/index.js'
 
 import './config/passport.js'
 import './config/database.js'
+import { errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
 
@@ -19,16 +20,7 @@ app.use(express.json());
 // other routers, then
 app.use('/', indexRouter);
 
-app.use((err, req, res, next) => {
-  console.log('catch-all error handler');
-  res.status(err.status || 500);
-  res.json({
-    error: {
-      ...err, // spreads manually-set properties only (error obj only spread these)
-      message: err.message, // then specify error-native properties, so that they are also included
-    }
-  });
-});
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 const hostname = '0.0.0.0';

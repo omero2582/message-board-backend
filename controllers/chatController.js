@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { matchedData } from "express-validator";
 import { runTransaction } from "../config/database.js";
 import mongoose from "mongoose";
+import { CustomError } from "../errors/errors.js";
 
 export async function getChatMessages(req, res, next) {
   const { chatId } = matchedData(req);
@@ -32,13 +33,13 @@ export async function getChat(req, res, next) {
 
   const chat = await Chat.findById(chatId);
   if(!chat){
-    return res.status(404).json({error: 'Chat not found'});
+    throw new CustomError('Chat not found', {statusCode: 404});
+    
+    // return res.status(404).json({error: 'Chat not found'});
+    // const err = new Error('Chat not found');
+    // err.statusCode = 404;
+    // throw err;
 
-    const err = new Error('Chat not found');
-    err.status = 404;
-    throw err;
-
-    throw new CustomError('Chat not found', {status: 404});
   }
 
   // Permissions

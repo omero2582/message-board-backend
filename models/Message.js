@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Chat from "./Chat.js";
+import { CustomError } from "../errors/errors.js";
 
 const Schema = mongoose.Schema;
 
@@ -53,18 +54,20 @@ MessageSchema.pre('save', async function (next) {
   // Does chat exist
   const chatFound = await Chat.findById(this.chat);
   if(!chatFound){
-    const err = new Error('Chat not Found');
+    throw new CustomError('Chat not Found', {statusCode: 404});
+    /*const err = new Error('Chat not Found');
     err.status = 404;
-    return next(err);
+    return next(err); */
   }
 
   // Are they a member of this chat or is the chat global
   if (!chatFound.isGlobal){
     const isSenderInChat = chatFound.members.some(m => m.user.id === this.sender.id);
     if(!isSenderInChat){
-      const err = new Error('User is not a Member of this Chat');
-      err.status = 403;
-      return next(err);
+      throw new CustomError('User is not a Member of this Chat', {statusCode: 403});
+      // const err = new Error('User is not a Member of this Chat');
+      // err.statusCode = 403;
+      // return next(err);
     }
   }
 
@@ -76,7 +79,7 @@ MessageSchema.pre('save', async function (next) {
 //   const isSenderInChat = chatFound.members.some(m => m.id === this.sender.id);
 //   if(!isSenderInChat){
 //     const err = new Error('User is not a Member of this Chat');
-//     err.status = 403;
+//     err.statusCode = 403;
 //     return next(err);
 //   }
 
