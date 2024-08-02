@@ -12,10 +12,21 @@ export const createMessage = asyncHandler(async (req, res, next) => {
    content,
    chat: chatId,
   });
-  // Schema custom middelware checks here if chat exists, and if user has permissions for this
-  // (if user is in chat)
   
-  const message = await newMesasge.save();
+  // Permissions
+  // Admins dont skip these checks
+  const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
+  if(!isMemberInGroup){
+    throw new CustomError('User does not belong to this group', {statusCode: 401});
+  }
+
+  // Proceed
+  let message;
+  try {
+    message = await newMesasge.save();
+  } catch (error) {
+    throw new CustomError('Error saving new message');
+  }
   return res.json({message});
 });
 
@@ -35,35 +46,32 @@ export const deleteMesssage = asyncHandler(async (req, res, next) => {
   }
 
   // Permissions
-  // if not Admin, then check
+  // Admins skip all checks
   if(!req.user.isAdmin){
     const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
       throw new CustomError('User does not belong to this group', {statusCode: 401});
     }
 
-    const isSender = req.user.id === message.sender.toString();
+    // const isSender = req.user.id === message.sender.toString();
+    const isSender = req.user.equals(message.sender);
+    // check if this .equals code works ^^
     if(!isSender){
       throw new CustomError('User is not the sender of this message', {statusCode: 401});
     }
   }
 
-  // Otherwise, success
-  const deleted_message = await message.deleteOne();
-  return res.json({deleted_message})
-  // TODO, ^^^ this returns the following:
-  // {
-  //   "deleted_message": {
-  //       "acknowledged": true,
-  //       "deletedCount": 1
-  //   }
-  // }
+  // Proceed
+  const result = await message.deleteOne();
+  if (result.deletedCount === 0){
+    throw new CustomError('Error deleting message', {statusCode: 500})
+  }
+
+  return res.json({result, message})
 });
 
-
-
   
-// TODO TOOD NEW FINALL no longer using block commented out below
+// TODO TODO no longer using block commented out below, just here in case for long in future/another proj
 // Not sure if we should check if ALL recipients exist, or if at least 1 exists, or if we care at all
 // maybe if any exists for now
 // try {

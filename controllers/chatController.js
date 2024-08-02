@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import { CustomError } from "../errors/errors.js";
 import asyncHandler from 'express-async-handler';
 
-export const getChatMessages = asyncHandler(async (req, res) => {
+export const getChatMessages = asyncHandler(async (req, res, next) => {
   const { chatId } = matchedData(req);
 
   const chat = await Chat.findById(chatId);
@@ -28,7 +28,7 @@ export const getChatMessages = asyncHandler(async (req, res) => {
   return res.json({ chat: chatMessages });
 });
 
-export const getChat = asyncHandler(async (req, res) => {
+export const getChat = asyncHandler(async (req, res, next) => {
   const { chatId } = matchedData(req);
 
   const chat = await Chat.findById(chatId);
@@ -49,7 +49,7 @@ export const getChat = asyncHandler(async (req, res) => {
   return res.json({ chat });
 });
 
-export const createChat = asyncHandler(async (req, res) => {
+export const createChat = asyncHandler(async (req, res, next) => {
   const { name, members, isGroupChat, isGlobal } = matchedData(req);
   // member will come in as [123, 2342, 35], but now Schema has the form
   // [{user, total_unread}], so adjusting schema input below
@@ -74,24 +74,29 @@ export const createChat = asyncHandler(async (req, res) => {
 //
 // TODO I'm currently swapping back and forth the commented 1-2 lines below for testing. Switch to express testing library
 // export async function addUserToChat(userId, chatId) {
-export const addUserToChat = asyncHandler(async (req, res) => {
+export const addUserToChat = asyncHandler(async (req, res, next) => {
   const {userId, chatId} = matchedData(req);
   const chat = await Chat.findById(chatId);
 
-  // any permissions for this???
+  // Permissions:
+  // isMemberInGroup
+  // maybe let admins to anything??
+  if(!chat.isMemberInGroup(req.user.id)){
+    throw new CustomError('User requesting this add operation is not part of this chat', {statusCode: 401});
+  }
 
   if(chat.isMemberInGroup(userId)){
-    throw new CustomError('User is already in this Chat', {statusCode: 409});
+    throw new CustomError('Target User is already in this Chat', {statusCode: 409});
   }
-  // user not in chat
+  // Target user is not in chat, see if they exist at all
   const user = await User.findById(userId);
   if(!user){
-    throw new CustomError('User doesnt exist', {statusCode: 404});
+    throw new CustomError('Target User doesnt exist', {statusCode: 404});
   }
+
+  // Transaction
   user.chats.push({ id: chatId })
   chat.members.push({ user: userId });
-  
-  // Transaction
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -128,7 +133,7 @@ export const addUserToChat = asyncHandler(async (req, res) => {
 
 //TODO
 // export async function removeUserFromChat(userId, chatId) {
-export const removeUserFromChat = asyncHandler(async (req, res) => {
+export const removeUserFromChat = asyncHandler(async (req, res, next) => {
   const {userId, chatId} = matchedData(req);  
   // await runTransaction(async() => {
   //   await Chat.findByIdAndUpdate(chatId, { 

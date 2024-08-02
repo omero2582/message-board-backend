@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, validationResult, matchedData, param } from "express-validator";
 import asyncHandler from 'express-async-handler';
-import { signJWT, getUserBasic } from '../helpers/helpers.js';
+import { signJWT, getUserBasic } from '../utils/utils.js';
 import { authOptional, authMandatory } from '../middleware/authMiddleware.js';
 import { login, signup } from '../controllers/authController.js';
 import { createMessage, deleteMesssage, } from '../controllers/messageController.js';
@@ -31,6 +31,10 @@ router.get('/protected',
   })
 )
 
+//
+//
+//
+
 router.post('/sign-up',
   body("firstName", "First Name must be specified").trim().isLength({min: 1}).escape(),
   body("lastName", "Last Name must be specified").trim().isLength({min: 1}).escape(),
@@ -53,14 +57,9 @@ router.get('/log-out', () => {
   // in the future, I'd like a 'log out all sessions', but this should require a more complex implementation
 })
 
-// debating /messages/:messageId vs chat/:chatId/messages/:messageId
-// groupId is unncessary to specify since we will need to grab this from message itself,
-// but maybe it improves readility
-router.delete('/messages/:messageId',
-  param("messageId").isMongoId().withMessage('Invalid messageId format').escape(),
-  authMandatory,
-  deleteMesssage
-)
+//
+//
+//
 
 router.post('/chats/',
   body("members").isArray({min: 2}).withMessage("members must be an array with at least 2 elements"),
@@ -70,14 +69,14 @@ router.post('/chats/',
   body("isGlobal").optional().trim().isBoolean().withMessage("isGlobal must be a boolean").escape(),
   checkValidationErrors,
   authMandatory,
-  asyncHandler(createChat)
+  createChat
 )
 
 
 router.get('/chats/:chatId',
   param("chatId").isMongoId().withMessage('Invalid chatId format').escape(),
   authMandatory,
-  asyncHandler(getChat)
+  getChat
 )
 
 // Messages return with most-recent first
@@ -85,7 +84,7 @@ router.get('/chats/:chatId',
 router.get('/chats/:chatId/messages',
   param("chatId").isMongoId().withMessage('Invalid chatId format').escape(),
   authMandatory,
-  asyncHandler(getChatMessages)
+  getChatMessages
 )
 
 router.post('/chats/:chatId/messages/',
@@ -95,6 +94,13 @@ router.post('/chats/:chatId/messages/',
   authMandatory,
   createMessage
 )
-export default router;
 
-// TODO probably change the unathorized response from passport, when failing mandatory auth
+// debating /messages/:messageId vs chat/:chatId/messages/:messageId
+// groupId is unncessary to specify since we will need to grab this from message itself,
+// but maybe it improves readility
+router.delete('/messages/:messageId',
+  param("messageId").isMongoId().withMessage('Invalid messageId format').escape(),
+  authMandatory,
+  deleteMesssage
+)
+export default router;

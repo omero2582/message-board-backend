@@ -1,0 +1,16 @@
+createMessage
+  success only if: is part of the chat or globalChat
+deleteMessage
+  success only if: is admin, or (part of the chat or globalChat) + is sender
+
+getChatMessages
+  success only if: is admin, or part of the chat or globalChat
+getChat
+  success only if: is admin, or part of the chat or globalChat
+createChat
+  success only if: user exists
+addUserToChat
+  success only if: is admin, or part of the chat or globalChat
+removeUserFromChat
+  success only if: is admin, or part of the chat or globalChat
+  maybe introduce something called "chat admin" later on
