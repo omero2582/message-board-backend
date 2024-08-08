@@ -20,49 +20,39 @@ export const login = asyncHandler(async (req, res, next) => {
   }
 
   // issue JWT
-  // try {
-  //   const token_jwt = signJWT(user);
-  //   return res.json({ user, token_jwt })
-  // } catch(err) {
-  //   throw new CustomError("Error singing JWT", {statusCode: 500} );
-  // };
-
-  // issue JWT
-  const token_jwt = await signJWT(user);  // rewrote this function so that it now throws a custom error indicating the signing failed
+  const token_jwt = await signJWT(user);
   return res.json({ user, token_jwt })
 })
 
 export const signup = asyncHandler(async (req, res, next) => {
-  // throw new Error ('ERRROORORO');
   // const {firstName, lastName, username, password} = req.body;
   const {firstName, lastName, username, password, email} = matchedData(req);
   //same as above but extra layer ensures ONLY data the passed vlidation sanitation is here
 
-  // TODO to add apparently can ommit 3rd argument to make it return promise
-  // await bcrypt.hash(password, 10)
-
-  bcrypt.hash(password, 10, async (err, hashedPassword) => {
-    if(err){
-      throw new CustomError("Error hashing password", {statusCode: 500} );
-    }
+  let hashedPassword;
+  try {
+    hashedPassword = await bcrypt.hash(password, 10);
+  } catch (error) {
+    throw new CustomError("Error hashing password", {statusCode: 500} )
+  }
     
-    // otherwise, store user with hashedPassword in DB
-    let user;
-    try {
-      const newUser = new User({
-        firstName,
-        lastName,
-        username,
-        password: hashedPassword,
-        email,
-        membership: allMemberships.find(m => m.tier === 0),
-      });
-      user = await newUser.save();
-    } catch(err) {
-      throw new CustomError("Error Creating User", {statusCode: 500} );
-    };
+  // otherwise, store user with hashedPassword in DB
+  let user;
+  try {
+    const newUser = new User({
+      firstName,
+      lastName,
+      username,
+      password: hashedPassword,
+      email,
+      membership: allMemberships.find(m => m.tier === 0),
+    });
+    user = await newUser.save();
+  } catch(err) {
+    throw new CustomError("Error Creating User", {statusCode: 500} );
+  };
 
     const token_jwt = await signJWT(user);
     res.json({ user, token_jwt })
-  });
-})
+  }
+)

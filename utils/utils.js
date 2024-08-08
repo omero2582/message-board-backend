@@ -13,10 +13,12 @@ export async function signJWT(user){
   // )
   // return token_jwt;
 
-  // async version
-  // can maybe use callback at the end to throw CustomError here. This way I don't have to
-  // catch for this signJWT error elsewhere when I call this signJWT function
-  
+  // async + Promise. This way we can easily throw the error here so that we have the
+  // error isolated as 'Error signing JWT'
+  // this line below could alternatively be:  `return new Promise((resolve, reject) => {`
+  // which saves us a bit of code, and lets us omit the 'const' and 'return',
+  // but I like th current implemetation better, because if I wanted to add more code, I could
+  // easily write at the bottom here, instead of having to nest it deeply
   const token_jwt = await new Promise((resolve, reject) => {
     jwt.sign(
       { sub: user.id },
@@ -24,15 +26,12 @@ export async function signJWT(user){
       { expiresIn: '30d', algorithm: 'RS256' },
       (err, token) => {
         if(err){
-          // throw new CustomError("Error signing JWT", {statusCode: 500} );
           reject(new CustomError("Error signing JWT", {statusCode: 500} ));
         }
         resolve(token);
       }
     )
   })
-
-  console.log('TOKEN JWTTTTT----------', token_jwt)
   return token_jwt;
 }
 
@@ -48,7 +47,7 @@ export function getUserBasic(user){
 
 
 // TODO
-// how to do it async:
+// how to JWT async:
 // https://medium.com/@ardipurba/things-to-note-when-signing-and-verifying-jwt-token-in-nodejs-fad0ee4cbfad
 // const { sign, verify } = require('jsonwebtoken')
 

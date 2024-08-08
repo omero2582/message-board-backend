@@ -17,15 +17,20 @@ const opts = {
 
 passport.use(
   new Strategy(opts, async (payload, done) => {
-    // try/catch because findById can throw unexpected errors, although not sure what this does
-    // if i am just calling done(error) on it anyways
+    // this callback only runs if the JWT is verified as valid and untampered with and not expired
+    // there is no code for that, it just happens with (new Strategy) and passport behind the scenes
+
+    // try/catch because findById can throw unexpected errors
     try {
       // Validating/Sanitizing payload
+      // TODO since this callback only runs if the JWT is verified (issued by us), Im not sure about this check here....
       if(!mongoose.isValidObjectId(payload.sub)){
         throw new CustomError('Invalid User ID on JSON Web Token payload', {statusCode: 400});
       }
 
       // Proceed
+      // 'done()' here continues onto the execution of the callback passed onto passport.authenticate("jwt"),
+      // which is the caller of this function. authMiddleware.js has some callers
       const user = await User.findById(payload.sub);
       if (user) {
         return done(null, user);
@@ -34,8 +39,6 @@ passport.use(
       }
     } catch (error) {
       return done(error, false);
-      // TODO, we just changed above form null to false, check if this all still works
-      // the docs have false, the tutorial had null. Seems false is the correct value
     }
   })
 );
