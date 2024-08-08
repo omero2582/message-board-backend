@@ -33,7 +33,9 @@ passport.use(
         return done(null, false)
       }
     } catch (error) {
-      return done(error, null);
+      return done(error, false);
+      // TODO, we just changed above form null to false, check if this all still works
+      // the docs have false, the tutorial had null. Seems false is the correct value
     }
   })
 );

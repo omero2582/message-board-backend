@@ -28,14 +28,18 @@ export const login = asyncHandler(async (req, res, next) => {
   // };
 
   // issue JWT
-  const token_jwt = signJWT(user);  // rewrote this function so that it now throws a custom error indicating the signing failed
+  const token_jwt = await signJWT(user);  // rewrote this function so that it now throws a custom error indicating the signing failed
   return res.json({ user, token_jwt })
 })
 
 export const signup = asyncHandler(async (req, res, next) => {
+  // throw new Error ('ERRROORORO');
   // const {firstName, lastName, username, password} = req.body;
   const {firstName, lastName, username, password, email} = matchedData(req);
   //same as above but extra layer ensures ONLY data the passed vlidation sanitation is here
+
+  // TODO to add apparently can ommit 3rd argument to make it return promise
+  // await bcrypt.hash(password, 10)
 
   bcrypt.hash(password, 10, async (err, hashedPassword) => {
     if(err){
@@ -58,7 +62,7 @@ export const signup = asyncHandler(async (req, res, next) => {
       throw new CustomError("Error Creating User", {statusCode: 500} );
     };
 
-    const token_jwt = signJWT(user);
+    const token_jwt = await signJWT(user);
     res.json({ user, token_jwt })
   });
 })
