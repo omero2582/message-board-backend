@@ -1,6 +1,6 @@
 import passport from "passport";
 import asyncHandler from 'express-async-handler';
-import { CustomError } from "../errors/errors.js";
+import { AuthenticationError, AuthorizationError, CustomError } from "../errors/errors.js";
 
 // TODO, the actual authentication (passport strategy) happens in config/passport.js
 // I think I should probably combine config/passport.js and this file, because they are targetting
@@ -27,7 +27,7 @@ export const authMandatory = asyncHandler(async (req, res, next) => {
       return next(err);
     }
     if (!user) {      
-      return next(new CustomError('Unauthorized', {statusCode: 401}))
+      return next(new AuthenticationError('Unauthorized'))
     }
     req.user = user;
     return next();

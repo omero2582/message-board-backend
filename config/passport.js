@@ -31,7 +31,7 @@ passport.use(
       // Proceed
       // 'done()' here continues onto the execution of the callback passed onto passport.authenticate("jwt"),
       // which is the caller of this function. authMiddleware.js has some callers
-      const user = await User.findById(payload.sub);
+      const user = await User.findById(payload.sub).populate('membership')
       if (user) {
         return done(null, user);
       } else {

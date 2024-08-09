@@ -6,7 +6,7 @@ import { authOptional, authMandatory } from '../middleware/authMiddleware.js';
 import { login, signup } from '../controllers/authController.js';
 import { createMessage, deleteMesssage, } from '../controllers/messageController.js';
 import { createChat, getChat, getChatMessages } from '../controllers/chatController.js';
-import { CustomError } from '../errors/errors.js';
+import { CustomError, ValidationError } from '../errors/errors.js';
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
 const checkValidationErrorsArray = asyncHandler( async (req, res, next) =>{
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new CustomError('Validation Error',{statusCode: 400, errors: errors.array()});
+    throw new ValidationError('Validation Error', {statusCode: 400, errors: errors.array()});
   }
   next();
 });
@@ -23,7 +23,7 @@ const checkValidationErrorsArray = asyncHandler( async (req, res, next) =>{
 const checkValidationErrorsObjKeys = asyncHandler( async (req, res, next) =>{
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new CustomError('Validation Error',{statusCode: 400, errors: errors.mapped()});
+    throw new ValidationError('Validation Error', {statusCode: 400, errors: errors.mapped()});
   }
   next();
 });
@@ -40,7 +40,7 @@ const checkValidationErrorsObjKeysArray = asyncHandler( async (req, res, next) =
   }, {})
 
   if (!errorsRaw.isEmpty()) {
-    throw new CustomError('Validation Error',{statusCode: 400, errors});
+    throw new ValidationError('Validation Error', {statusCode: 400, errors});
   }
   next();
 });

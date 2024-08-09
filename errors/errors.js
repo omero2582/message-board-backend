@@ -1,9 +1,10 @@
 export class CustomError extends Error {
-  // constructor(message, object){
-  constructor(message, {statusCode, ...object}){
+  constructor(message, {statusCode = 500, type = "InternalServerError", ...object}){
     super(message);
     Object.assign(this, object);
     this.statusCode = statusCode;
+    this.type = type;
+    // this.name = name;
     // this.isOperational = true; Not sure if should add this,
     // basically marks it as a 'known caught error'
     // to differentiate it from an unknown thrown error that
@@ -12,15 +13,68 @@ export class CustomError extends Error {
   }
 }
 
+export class AuthenticationError extends CustomError {
+  constructor(message, object = {}) {
+    super(message, {
+      ...object,
+      statusCode: 401,
+      type: "AuthenticationError",
+    });
+  }
+}
+
+export class AuthorizationError extends CustomError {
+  constructor(message, object = {}) {
+    super(message, {
+      ...object,
+      statusCode: 401,
+      type: "AuthorizationError",
+    });
+  }
+}
+
+export class ValidationError extends CustomError {
+  constructor(message, object = {}) {
+    super(message, {
+      ...object,
+      statusCode: 400,
+      type: "ValidationError",
+    });
+  }
+}
+
+export class DuplicateMongoError extends CustomError {
+  constructor(mongoErr){
+    const { keyValue, errorResponse } = mongoErr;
+    const [field, value] = Object.entries(keyValue)[0];
+    // const msg = `${field} already exists with value ${value}`;
+    const msg = `That ${field} is already taken. Try another.`;
+
+    super(msg, {
+      // ...errorResponse, 
+      errors: {
+        [field]: {
+          value,
+          msg,
+        },
+      },
+      type: "DuplicateError",
+      statusCode: 400
+      // name: mongoErr.name,
+    });
+      // This err has an err.errorResponse object, which contains all the exact same other key values as the err object
+      // The only thing is that 'message' is renamed to 'errmsg', which I prefer when I forward this error
+      // TODO, I'm assuming when code 11000 that this object returns all these properties, I think this is ok
+  }
+}
+
 // Not sure if I will use more speciifc errors like below
-export class CustomNotFoundError extends CustomError {
+export class NotFoundError extends CustomError {
   constructor(message, object = {}) {
     super(message, {
       ...object,
       statusCode: 404,
-      name: "NotFoundError"
+      type: "NotFoundError"
     });
-    // this.name = "NotFoundError";
-    // // So the error is neat when stringified. NotFoundError: message instead of Error: message
   }
 }

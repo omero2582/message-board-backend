@@ -4,19 +4,19 @@ import bcrypt from 'bcryptjs'
 import { body, validationResult, matchedData } from "express-validator";
 import { allMemberships } from '../config/database.js';
 import asyncHandler from 'express-async-handler';
-import { CustomError } from '../errors/errors.js';
+import { CustomError, DuplicateMongoError, AuthenticationError } from '../errors/errors.js';
 
 export const login = asyncHandler(async (req, res, next) => {
   const {username, password} = matchedData(req);
   
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ username }).populate('membership');
   if (!user) {
-    throw new CustomError('Could not find User', {statusCode: 401} );
+    throw new AuthenticationError('User not found');
   };
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    throw new CustomError("Incorrect password", {statusCode: 401} );
+    throw new AuthenticationError("Incorrect password");
   }
 
   // issue JWT
@@ -46,10 +46,18 @@ export const signup = asyncHandler(async (req, res, next) => {
       password: hashedPassword,
       email,
       membership: allMemberships.find(m => m.tier === 0),
+      // TODO, the entire memebership object is available here, not sure what to do with this...
+      // Because upon log-in, we do not get this object. Also what about when a member upgrades their membership?
+      // should the embership be inside the JWT? and then be manually issued another JWT upon upgrade?
+      // nah,, 
     });
     user = await newUser.save();
   } catch(err) {
-    throw new CustomError("Error Creating User", {statusCode: 500} );
+    if (err.code === 11000){
+      // code 11000 = duplicate
+      throw new DuplicateMongoError(err);
+    }
+    throw new CustomError("Error Creating User", {...err, statusCode: 500} );
   };
 
     const token_jwt = await signJWT(user);

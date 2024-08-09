@@ -2,7 +2,7 @@ import Chat from "../models/Chat.js";
 import Message from "../models/Message.js";
 import { matchedData } from "express-validator";
 import asyncHandler from 'express-async-handler';
-import { CustomError } from "../errors/errors.js";
+import { AuthorizationError, CustomError, NotFoundError } from "../errors/errors.js";
 
 export const createMessage = asyncHandler(async (req, res, next) => {
   const { content, chatId } = matchedData(req);
@@ -17,7 +17,7 @@ export const createMessage = asyncHandler(async (req, res, next) => {
   // Admins dont skip these checks
   const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
   if(!isMemberInGroup){
-    throw new CustomError('User does not belong to this group', {statusCode: 401});
+    throw new AuthorizationError('User does not belong to this group');
   }
 
   // Proceed
@@ -42,7 +42,7 @@ export const deleteMesssage = asyncHandler(async (req, res, next) => {
   });
   
   if(!message){
-    throw new CustomError("Message not Found", {statusCode: 404} );
+    throw new NotFoundError("Message not Found");
   }
 
   // Permissions
@@ -50,14 +50,14 @@ export const deleteMesssage = asyncHandler(async (req, res, next) => {
   if(!req.user.isAdmin){
     const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      throw new CustomError('User does not belong to this group', {statusCode: 401});
+      throw new AuthorizationError('User does not belong to this group');
     }
 
     // const isSender = req.user.id === message.sender.toString();
     const isSender = req.user.equals(message.sender);
     // check if this .equals code works ^^
     if(!isSender){
-      throw new CustomError('User is not the sender of this message', {statusCode: 401});
+      throw new AuthorizationError('User is not the sender of this message');
     }
   }
 
