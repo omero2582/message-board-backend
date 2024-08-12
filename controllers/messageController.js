@@ -7,27 +7,31 @@ import { AuthorizationError, CustomError, NotFoundError } from "../errors/errors
 export const createMessage = asyncHandler(async (req, res, next) => {
   const { content, chatId } = matchedData(req);
 
-  const newMesasge = new Message({
+  const message = new Message({
    sender: req.user.id,
    content,
    chat: chatId,
   });
   
+  const chat = await Chat.findById(chatId);
+  if(!chat){
+    throw new NotFoundError("Chat not Found");
+  }
+
   // Permissions
   // Admins dont skip these checks
-  const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
+  const isMemberInGroup = chat.isMemberInGroup(req.user.id);
   if(!isMemberInGroup){
     throw new AuthorizationError('User does not belong to this group');
   }
 
   // Proceed
-  let message;
   try {
-    message = await newMesasge.save();
+    await message.save();
+    return res.json({message});
   } catch (error) {
     throw new CustomError('Error saving new message');
   }
-  return res.json({message});
 });
 
 export const deleteMesssage = asyncHandler(async (req, res, next) => {

@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv'
 dotenv.config();
 
 import indexRouter from './routes/index.js'
+import chatRouter from './routes/chats.js'
 
 import './config/passport.js'
 import './config/database.js'
@@ -19,6 +20,7 @@ app.use(express.json());
 
 // other routers, then
 app.use('/', indexRouter);
+app.use('/', chatRouter);
 
 app.use(errorHandler);
 

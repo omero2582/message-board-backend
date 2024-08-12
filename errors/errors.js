@@ -68,13 +68,22 @@ export class DuplicateMongoError extends CustomError {
   }
 }
 
-// Not sure if I will use more speciifc errors like below
 export class NotFoundError extends CustomError {
   constructor(message, object = {}) {
     super(message, {
       ...object,
       statusCode: 404,
       type: "NotFoundError"
+    });
+  }
+}
+
+export class TransactionError extends CustomError {
+  constructor(message, object = {}) {
+    super(message, {
+      ...object,
+      statusCode: 500,
+      type: "TransactionError"
     });
   }
 }

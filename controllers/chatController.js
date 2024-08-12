@@ -3,7 +3,7 @@ import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { matchedData } from "express-validator";
 import mongoose from "mongoose";
-import { CustomError } from "../errors/errors.js";
+import { CustomError, AuthorizationError, NotFoundError, TransactionError } from "../errors/errors.js";
 import asyncHandler from 'express-async-handler';
 
 export const getChatMessages = asyncHandler(async (req, res, next) => {
@@ -11,7 +11,7 @@ export const getChatMessages = asyncHandler(async (req, res, next) => {
 
   const chat = await Chat.findById(chatId);
   if(!chat){
-    throw new CustomError('Chat not found', {statusCode: 404});
+    throw new NotFoundError('Chat not found');
   }
 
   // Permissions
@@ -19,7 +19,7 @@ export const getChatMessages = asyncHandler(async (req, res, next) => {
   if(!req.user.isAdmin){
     const isMemberInGroup = chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      throw new CustomError('User does not belong to this group', {statusCode: 401});
+      throw new AuthorizationError('User does not belong to this group');
     }
   }
 
@@ -33,7 +33,7 @@ export const getChat = asyncHandler(async (req, res, next) => {
 
   const chat = await Chat.findById(chatId);
   if(!chat){
-    throw new CustomError('Chat not found', {statusCode: 404});
+    throw new NotFoundError('Chat not found');
   }
 
   // Permissions
@@ -41,7 +41,7 @@ export const getChat = asyncHandler(async (req, res, next) => {
   if(!req.user.isAdmin){
     const isMemberInGroup = chat.isMemberInGroup(req.user.id);
     if(!isMemberInGroup){
-      throw new CustomError('User does not belong to this group', {statusCode: 401});
+      throw new AuthorizationError('User does not belong to this group');
     }
   }
 
@@ -76,13 +76,16 @@ export const createChat = asyncHandler(async (req, res, next) => {
 // export async function addUserToChat(userId, chatId) {
 export const addUserToChat = asyncHandler(async (req, res, next) => {
   const {userId, chatId} = matchedData(req);
+
   const chat = await Chat.findById(chatId);
+  if(!chat){
+    throw new NotFoundError('Chat not found');
+  }
 
   // Permissions:
-  // isMemberInGroup
   // maybe let admins to anything??
   if(!chat.isMemberInGroup(req.user.id)){
-    throw new CustomError('User requesting this add operation is not part of this chat', {statusCode: 401});
+    throw new AuthorizationError('User requesting this add operation is not part of this chat');
   }
 
   if(chat.isMemberInGroup(userId)){
@@ -91,7 +94,7 @@ export const addUserToChat = asyncHandler(async (req, res, next) => {
   // Target user is not in chat, see if they exist at all
   const user = await User.findById(userId);
   if(!user){
-    throw new CustomError('Target User doesnt exist', {statusCode: 404});
+    throw new NotFoundError('Target User doesnt exist');
   }
 
   // Transaction
@@ -160,10 +163,7 @@ export const removeUserFromChat = asyncHandler(async (req, res, next) => {
   } catch (error) {
     const {message, errors, stack} = error;
     console.error('ABORTING TRANSACTION', 'Error Finding and Removing Chat or User in Transaction');
-    throw new CustomError(message, {
-      name: 'TransactionError',
-      statusCode: 500
-    });
+    throw new TransactionError(message);
     // TODO test above. The correct flow should be:
     // catches error, then throws Custom error, then before propagating out of this fn,
     // it runs the finally block, and then it propagates

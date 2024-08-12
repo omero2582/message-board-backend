@@ -21,5 +21,29 @@ async function getAllMemberships (){
   return out;
 }
 
-await dbStart();
-export const allMemberships = await getAllMemberships();
+let allMemberships = [];
+
+function getAllMembershipsCached(){
+  return [...allMemberships];
+}
+
+function watchMembershipChanges(){
+  MembershipType.watch().on('change', async () => {
+    console.log('memebership changed')
+    try {
+      allMemberships = await getAllMemberships();
+    } catch (error) {
+      console.log('Error retriving all memberships');
+    }
+  })
+}
+
+async function initialize(){
+  await dbStart();
+  allMemberships = await getAllMemberships();;
+  watchMembershipChanges();
+} 
+
+
+await initialize();
+export { getAllMembershipsCached }

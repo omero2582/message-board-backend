@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import { signJWT } from '../utils/utils.js';
 import bcrypt from 'bcryptjs'
 import { body, validationResult, matchedData } from "express-validator";
-import { allMemberships } from '../config/database.js';
+import { getAllMembershipsCached } from '../config/database.js';
 import asyncHandler from 'express-async-handler';
 import { CustomError, DuplicateMongoError, AuthenticationError } from '../errors/errors.js';
 
@@ -45,11 +45,7 @@ export const signup = asyncHandler(async (req, res, next) => {
       username,
       password: hashedPassword,
       email,
-      membership: allMemberships.find(m => m.tier === 0),
-      // TODO, the entire memebership object is available here, not sure what to do with this...
-      // Because upon log-in, we do not get this object. Also what about when a member upgrades their membership?
-      // should the embership be inside the JWT? and then be manually issued another JWT upon upgrade?
-      // nah,, 
+      membership: getAllMembershipsCached().find(m => m.tier === 0),
     });
     user = await newUser.save();
   } catch(err) {
