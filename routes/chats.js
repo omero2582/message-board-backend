@@ -2,29 +2,34 @@ import express from 'express';
 import { body, param } from "express-validator";
 import { checkValidationErrorsObjKeys } from '../middleware/validationMiddleware.js';
 import { authMandatory } from '../middleware/authMiddleware.js';
-import { createChat, getChat, getChatMessages, addUserToChat, removeUserFromChat } from '../controllers/chatController.js'
+import { createChat, getChatMessages, addUserToChat, removeUserFromChat, getChats } from '../controllers/chatController.js'
 import { createMessage, deleteMesssage } from '../controllers/messageController.js';
 
 const router = express.Router();
 
-router.post('/chats/',
-  body("members").isArray({min: 2}).withMessage("members must be an array with at least 2 elements"),
+router.post('/chats',
+  body("members").isArray({min: 1}).withMessage("members must be an array with at least 1 elements"),
   body('members.*').isMongoId().withMessage('Invalid individual memberId format'),
   body("name").optional().trim().isLength({min: 1}),
-  body("isGroupChat").optional().trim().isBoolean().withMessage("isGroupChat must be a boolean"),
   body("isGlobal").optional().trim().isBoolean().withMessage("isGlobal must be a boolean"),
   checkValidationErrorsObjKeys,
   authMandatory,
   createChat
 )
 
-
-router.get('/chats/:chatId',
-  param("chatId").isMongoId().withMessage('Invalid chatId format'),
+router.get('/chats',
   checkValidationErrorsObjKeys,
   authMandatory,
-  getChat
+  getChats,
 )
+
+
+// router.get('/chats/:chatId',
+//   param("chatId").isMongoId().withMessage('Invalid chatId format'),
+//   checkValidationErrorsObjKeys,
+//   authMandatory,
+//   getChat
+// )
 
 // Messages return with most-recent first
 // TODO implement pagination later

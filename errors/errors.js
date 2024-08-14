@@ -1,5 +1,5 @@
 export class CustomError extends Error {
-  constructor(message, {statusCode = 500, type = "InternalServerError", ...object}){
+  constructor(message, {statusCode = 500, type = "InternalServerError", ...object} = {}){
     super(message);
     Object.assign(this, object);
     this.statusCode = statusCode;

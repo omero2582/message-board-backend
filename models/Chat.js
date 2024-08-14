@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 
 const ChatSchema = new Schema({
   name: { type: String },
+  // TODO add default name, maybe a validation middleware based on the type of chat?
   members: {
     type :  [{ 
       _id: false,

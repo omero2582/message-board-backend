@@ -13,7 +13,7 @@ const UserSchema = new Schema({
   isAdmin: { type: Boolean, default: false },
   chats: [{ 
     _id: false, // TODO maybe just make _id equal the id value below
-    id: { type: Schema.Types.ObjectId, ref: 'Chat' },
+    chat: { type: Schema.Types.ObjectId, ref: 'Chat' },
     isOpened: { type: Boolean, default: true },
     // nice to have 'isOpened' here, because then I dont have to fetch
     // any Chats information, unless isOpened is set to true here
