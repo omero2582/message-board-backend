@@ -27,7 +27,7 @@ export class AuthorizationError extends CustomError {
   constructor(message, object = {}) {
     super(message, {
       ...object,
-      statusCode: 401,
+      statusCode: 403,
       type: "AuthorizationError",
     });
   }

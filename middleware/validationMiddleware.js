@@ -6,7 +6,7 @@ import asyncHandler from 'express-async-handler';
 const checkValidationErrorsArray = asyncHandler( async (req, res, next) =>{
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new ValidationError('Validation Error', {statusCode: 400, errors: errors.array()});
+    throw new ValidationError('Validation Error', {errors: errors.array()});
   }
   next();
 });
@@ -15,7 +15,7 @@ const checkValidationErrorsArray = asyncHandler( async (req, res, next) =>{
 export const checkValidationErrorsObjKeys = asyncHandler( async (req, res, next) =>{
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new ValidationError('Validation Error', {statusCode: 400, errors: errors.mapped()});
+    throw new ValidationError('Validation Error', {errors: errors.mapped()});
   }
   next();
 });
@@ -32,7 +32,7 @@ const checkValidationErrorsObjKeysArray = asyncHandler( async (req, res, next) =
   }, {})
 
   if (!errorsRaw.isEmpty()) {
-    throw new ValidationError('Validation Error', {statusCode: 400, errors});
+    throw new ValidationError('Validation Error', {errors});
   }
   next();
 });

@@ -11,7 +11,6 @@ router.post('/chats',
   body("members").isArray({min: 1}).withMessage("members must be an array with at least 1 elements"),
   body('members.*').isMongoId().withMessage('Invalid individual memberId format'),
   body("name").optional().trim().isLength({min: 1}),
-  body("isGlobal").optional().trim().isBoolean().withMessage("isGlobal must be a boolean"),
   checkValidationErrorsObjKeys,
   authMandatory,
   createChat

@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as dotenv from 'dotenv'
 import mongoose from "mongoose";
-import { CustomError } from "../errors/errors.js";
+import { CustomError, ValidationError } from "../errors/errors.js";
 dotenv.config();
 
 // I think I should maybe combine middleware/authMiddleware.js and this file, because they are targetting
@@ -25,7 +25,7 @@ passport.use(
       // Validating/Sanitizing payload
       // TODO since this callback only runs if the JWT is verified (issued by us), Im not sure about this check here....
       if(!mongoose.isValidObjectId(payload.sub)){
-        throw new CustomError('Invalid User ID on JSON Web Token payload', {statusCode: 400});
+        throw new ValidationError('Invalid User ID on JSON Web Token payload');
       }
 
       // Proceed

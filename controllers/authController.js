@@ -33,7 +33,7 @@ export const signup = asyncHandler(async (req, res, next) => {
   try {
     hashedPassword = await bcrypt.hash(password, 10);
   } catch (error) {
-    throw new CustomError("Error hashing password", {statusCode: 500} )
+    throw new CustomError("Error hashing password")
   }
     
   // otherwise, store user with hashedPassword in DB
@@ -53,7 +53,7 @@ export const signup = asyncHandler(async (req, res, next) => {
       // code 11000 = duplicate
       throw new DuplicateMongoError(err);
     }
-    throw new CustomError("Error Creating User", {...err, statusCode: 500} );
+    throw new CustomError("Error Creating User", {...err});
   };
 
     const token_jwt = await signJWT(user);

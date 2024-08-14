@@ -84,7 +84,7 @@ export const createChat = asyncHandler(async (req, res, next) => {
   // group chat or a dm chat. For example, I dont want to let people create duplciate chats,
   // so in the handler that handles only private DMs, I always want to first check if a
   // chat already exists with the 1 member passed in
-  const { members, name, isGlobal } = matchedData(req);
+  const { members, name } = matchedData(req);
   // can also do matchedData(req, { includeOptionals: true }) to include undefined fields,
   // but if we just destrucutre like above, I think we dont need this because we will get undefined anyways
   // its prob only good if we aren't destrucuring and just assigning as data = matchedData(req, { includeOptionals: true })
@@ -109,25 +109,20 @@ export const createChat = asyncHandler(async (req, res, next) => {
   // I think it makes sense to have the split here between group, global, and private chats
   let chat;
   if(validUsers.length > 2){
-    chat = await createGroupChat({ members: membersUnique, name, isGlobal });
+    chat = await createGroupChat({ members: membersUnique, name });
   }else{
     chat = await createPrivateChat({members: membersUnique})
   }
   return res.json({ chat });
 });
 
-// member will come in as [123, 2342, 35], but now Schema has the form
-// [{user, total_unread}], so adjusting schema input below
-const createGroupChat = async ({members, name, isGlobal}) => {
+// members will come in as [123, 2342, 35], but Chat.members has the form
+// [{user, total_unread}], so we adjust below
+const createGroupChat = async ({members, name}) => {
   const newChat = new Chat({
     name,
     members: members.map(m => ({user: m})),
-    //
-    isGroupChat: true,
-    isGlobal
-    // I plan to change this in the schema. To instead have 1 field type of enum string
-    // that can either be 'global', 'private', or 'group'
-    // so the 2 assingments above here would change
+    type: "group",
   });
 
   const chat = await newChat.save();
@@ -137,6 +132,7 @@ const createGroupChat = async ({members, name, isGlobal}) => {
 const createPrivateChat = async ({membersIn}) => {
   const newChat = new Chat({
     members: membersIn.map(m => ({user: m})),
+    type: "private",
   });
 
   const chat = await newChat.save();
