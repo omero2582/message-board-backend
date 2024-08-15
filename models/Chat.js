@@ -4,17 +4,17 @@ const Schema = mongoose.Schema;
 
 const ChatSchema = new Schema({
   name: { type: String },
-  members: {
-    type :  [{ 
-      _id: false,
-      user: { type: Schema.Types.ObjectId, ref: 'User'},
-      totalUnread: { type: Number, default: 0 },
-      // nice to have 'totalUnread'here, so that when a user sends a new message,
-      // I can easily add 1 to the total unread of every member
-    }],
-    required: true,
-  },
-  type: { type: String, enum: ['private', 'group'], required: true },
+  // members: {
+  //   type :  [{ 
+  //     _id: false,
+  //     user: { type: Schema.Types.ObjectId, ref: 'User'},
+  //     totalUnread: { type: Number, default: 0 },
+  //     // nice to have 'totalUnread'here, so that when a user sends a new message,
+  //     // I can easily add 1 to the total unread of every member
+  //   }],
+  //   required: true,
+  // },
+  type: { type: String, enum: ['direct', 'group'], required: true },
   // isGroupChat: { type: Boolean, default: false }
   // isGlobal: { type: Boolean, default: false },
   // Think of GlobalChats like a livestream chat.

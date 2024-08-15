@@ -5,6 +5,7 @@ import { matchedData } from "express-validator";
 import mongoose from "mongoose";
 import { CustomError, AuthorizationError, NotFoundError, TransactionError } from "../errors/errors.js";
 import asyncHandler from 'express-async-handler';
+import UserChat from "../models/UserChat.js";
 
 export const getChatMessages = asyncHandler(async (req, res, next) => {
   const { chatId } = matchedData(req);
@@ -17,7 +18,8 @@ export const getChatMessages = asyncHandler(async (req, res, next) => {
   // Permissions
   // if not Admin, then check
   if(!req.user.isAdmin){
-    const isMemberInGroup = chat.isMemberInGroup(req.user.id);
+    // const isMemberInGroup = chat.isMemberInGroup(req.user.id);
+    const isMemberInGroup = await UserChat.findOne({chat: chatId, user: req.user.id});
     if(!isMemberInGroup){
       throw new AuthorizationError('User does not belong to this group');
     }
@@ -65,25 +67,23 @@ export const getChatMessages = asyncHandler(async (req, res, next) => {
 // rotue that returns all the messages from this chat
 // TOOD TOOD ok now test how population works below, then proceed
 export const getChats = asyncHandler(async (req, res, next) => {
-  const user = await req.user.populate({
-    path: 'chats.chat',
-    match: { 'chats.isOpened': true }
-  })
+  // const user = await req.user.populate({
+  //   path: 'chats.chat',
+  //   match: { 'chats.isOpened': true }
+  // })
 
-  if (!user.chats.length) {
+  const openedChats = await UserChat.find({user: req.user.id, isOpened: true}).populate('chat');
+
+  if (!openedChats.length) {
     throw new NotFoundError('No opened chats found??');
   }
 
-  const chats = user.chats;
+  const chats = openedChats;
   return req.json({chats});
 
 });
 
 export const createChat = asyncHandler(async (req, res, next) => {
-  // TODO TODO, need some sort of separation or another route depending on if Im creating a
-  // group chat or a dm chat. For example, I dont want to let people create duplciate chats,
-  // so in the handler that handles only private DMs, I always want to first check if a
-  // chat already exists with the 1 member passed in
   const { members, name } = matchedData(req);
   // can also do matchedData(req, { includeOptionals: true }) to include undefined fields,
   // but if we just destrucutre like above, I think we dont need this because we will get undefined anyways
@@ -106,36 +106,91 @@ export const createChat = asyncHandler(async (req, res, next) => {
   }
 
   // At this point, 2 or more valid users (including self) (unless one user is deleted between this line and prev?)
-  // I think it makes sense to have the split here between group, global, and private chats
+  // I think it makes sense to have the split here between group, global, and direct chats
   let chat;
   if(validUsers.length > 2){
-    chat = await createGroupChat({ members: membersUnique, name });
+    chat = await createGroupChat({ members: membersUnique, name, type: "group" });
   }else{
-    chat = await createPrivateChat({members: membersUnique})
+    chat = await createDirectChat({members: membersUnique, type: "direct" })
   }
   return res.json({ chat });
 });
 
-// members will come in as [123, 2342, 35], but Chat.members has the form
-// [{user, total_unread}], so we adjust below
-const createGroupChat = async ({members, name}) => {
-  const newChat = new Chat({
-    name,
-    members: members.map(m => ({user: m})),
-    type: "group",
-  });
+// TODO TODO borth this function and createDirectChat are almost the same, the
+// only real difference ins that createDirectChat does an extra check at the start of the try/catch
+// we can prob condesnse these functions into a reusable one, but just test if code works for now
+const createGroupChat = async ({members, name, type}) => {
+  const chat = new Chat({ name, type });
+  let membersDocuments;
 
-  const chat = await newChat.save();
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await chat.save({session});
+      membersDocuments = members.map(m => new UserChat({
+        chat,
+        user: m,
+      }))
+      await UserChat.insertMany(membersDocuments, {session});
+    });
+  } catch (error) {
+    const {message, errors, stack} = error;
+    console.error('ABORTING TRANSACTION', message);
+    throw new TransactionError(message);
+    // TODO test above. The correct flow should be:
+    // catches error, then throws Custom error, then before propagating out of this fn,
+    // it runs the finally block, and then it propagates
+  } finally {
+    console.log('finally');
+    session.endSession();
+  }
+  // maybe return members?
   return chat;
 };
 
-const createPrivateChat = async ({membersIn}) => {
-  const newChat = new Chat({
-    members: membersIn.map(m => ({user: m})),
-    type: "private",
-  });
+const createDirectChat = async ({members, name, type}) => {
+  let chat;
+  let membersDocuments;
+  
+  const session = await mongoose.startSession();
+  try {
+    // Check if a chat with these members already exists
+    const existingChat = await UserChat.aggregate([
+      { $match: { user: { $in: members } } },
+      { $group: { _id: "$chat", count: { $sum: 1 } } },
+      { $match: { count: 2 } }, // Ensure both members are present
+      { $lookup: { from: 'chats', localField: '_id', foreignField: '_id', as: 'chatDetails' } },
+      { $unwind: "$chatDetails" },
+      { $match: { "chatDetails.type": "private" } } // Ensure it is a private chat
+    ]).session(session);
 
-  const chat = await newChat.save();
+    // If an existing chat is found, return it
+    if (existingChat.length > 0) {
+        return existingChat[0].chatDetails;
+    }
+
+    // Otherwise Create a new chat
+    chat = new Chat({ name, type });
+    await session.withTransaction(async () => {
+      await chat.save({session});
+      membersDocuments = members.map(m => new UserChat({
+        chat,
+        user: m,
+      }))
+      await UserChat.insertMany(membersDocuments, {session});
+    });
+  } catch (error) {
+    const {message, errors, stack} = error;
+    console.error('ABORTING TRANSACTION', message);
+    throw new TransactionError(message);
+    // TODO test above. The correct flow should be:
+    // catches error, then throws Custom error, then before propagating out of this fn,
+    // it runs the finally block, and then it propagates
+  } finally {
+    console.log('finally');
+    session.endSession();
+  }
+  // maybe return members?
   return chat;
 };
 
@@ -153,11 +208,18 @@ export const addUserToChat = asyncHandler(async (req, res, next) => {
 
   // Permissions:
   // maybe let admins to anything??
-  if(!chat.isMemberInGroup(req.user.id)){
+  // if(!chat.isMemberInGroup(req.user.id)){
+    // const isSelfInGroup = await UserChat.findOne({chat: chatId, user: req.user.id});
+  const selfAndTargetInGroup = await UserChat.find({chat: chatId, user: { $in: [req.user.id, userId] }});
+  const isSelfInGroup = selfAndTargetInGroup.find(u => u.id === req.user.id);
+  if(!isSelfInGroup){
     throw new AuthorizationError('User requesting this add operation is not part of this chat');
   }
 
-  if(chat.isMemberInGroup(userId)){
+  // if(chat.isMemberInGroup(userId)){
+    // const isTargetInGroup = await UserChat.findOne({chat: chatId, user: userId});
+  const isTargetInGroup = selfAndTargetInGroup.find(u => u.id === userId);
+  if(isTargetInGroup){
     throw new CustomError('Target User is already in this Chat', {statusCode: 409});
   }
   // Target user is not in chat, see if they exist at all
@@ -166,21 +228,34 @@ export const addUserToChat = asyncHandler(async (req, res, next) => {
     throw new NotFoundError('Target User doesnt exist');
   }
 
+  const membersDocuments = [userId, req.user.id].map(m => new UserChat({
+    chat,
+    user: m,
+  }))
+  const out = await UserChat.insertMany(membersDocuments, {session});
+  return res.json({ out });
+  // TODO we no longer need transaction below for this, since we only do one DB operation, insertMany
+
   // Transaction
-  user.chats.push({ id: chatId })
-  chat.members.push({ user: userId });
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-        await chat.save({ session });
-        await user.save({ session });
-    });
-  } catch (error) {
-    const {message, errors, stack} = error;
-    console.error('ABORTING TRANSACTION', message);
-  } finally {
-    session.endSession();
-  }
+  // user.chats.push({ id: chatId })
+  // chat.members.push({ user: userId });
+  // const session = await mongoose.startSession();
+  // try {
+  //   await session.withTransaction(async () => {
+  //       await chat.save({ session });
+  //       await user.save({ session });
+  //   });
+  // } catch (error) {
+  //   const {message, errors, stack} = error;
+  //   console.error('ABORTING TRANSACTION', message);
+  //   throw new TransactionError(message);
+  //   // TODO test above. The correct flow should be:
+  //   // catches error, then throws Custom error, then before propagating out of this fn,
+  //   // it runs the finally block, and then it propagates
+  // } finally {
+  //   console.log('finally');
+  //   session.endSession();
+  // }
 });
   // Can maybe make a helper for above, similar to our runTransaction helper,
   // But I want each transaction to handle each error differently so they can send a response...
@@ -203,39 +278,42 @@ export const addUserToChat = asyncHandler(async (req, res, next) => {
   // })
   
 
-export const removeUserFromChat = asyncHandler(async (req, res, next) => {
-  const {userId, chatId} = matchedData(req);  
-  // await runTransaction(async() => {
-  //   await Chat.findByIdAndUpdate(chatId, { 
-  //     $pull: { members: { user: userId } } 
-  //   });
-  //   await User.findByIdAndUpdate(userId, { 
-  //     $pull: { chats: { ids: chatId } }
-  //    });
-  // })
-
+export const removeUsersFromChat = asyncHandler(async (req, res, next) => {
+  const {users, chatId} = matchedData(req);  
+  
   // Permissions???
+  // check req.user's permissions
 
-  // Transaction
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      await Chat.findByIdAndUpdate(chatId, { 
-        $pull: { members: { user: userId } } 
-      });
-      await User.findByIdAndUpdate(userId, { 
-        $pull: { chats: { id: chatId } }
-       });
-    });
-  } catch (error) {
-    const {message, errors, stack} = error;
-    console.error('ABORTING TRANSACTION', 'Error Finding and Removing Chat or User in Transaction');
-    throw new TransactionError(message);
-    // TODO test above. The correct flow should be:
-    // catches error, then throws Custom error, then before propagating out of this fn,
-    // it runs the finally block, and then it propagates
-  } finally {
-    console.log('finally');
-    session.endSession();
-  }
+
+  // TODO TOOD in the future, make this the same route and controller for removing
+  // and array of users from a chat. Its the same code for it. When you wish to remove
+  // one user, simply pass in the 1 id to the array
+  // const deleteUsers = [userID];
+  const out = await UserChat.deleteMany({ chat: chatId, user: { $in: users } });
+  return res.json({out})
+
+
+  // No longer need transaction
+  // // Transaction
+  // const session = await mongoose.startSession();
+  // try {
+  //   await session.withTransaction(async () => {
+  //     await Chat.findByIdAndUpdate(chatId, { 
+  //       $pull: { members: { user: userId } } 
+  //     });
+  //     await User.findByIdAndUpdate(userId, { 
+  //       $pull: { chats: { id: chatId } }
+  //      });
+  //   });
+  // } catch (error) {
+  //   const {message, errors, stack} = error;
+  //   console.error('ABORTING TRANSACTION', 'Error Finding and Removing Chat or User in Transaction');
+  //   throw new TransactionError(message);
+  //   // TODO test above. The correct flow should be:
+  //   // catches error, then throws Custom error, then before propagating out of this fn,
+  //   // it runs the finally block, and then it propagates
+  // } finally {
+  //   console.log('finally');
+  //   session.endSession();
+  // }
 })

@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param } from "express-validator";
 import { checkValidationErrorsObjKeys } from '../middleware/validationMiddleware.js';
 import { authMandatory } from '../middleware/authMiddleware.js';
-import { createChat, getChatMessages, addUserToChat, removeUserFromChat, getChats } from '../controllers/chatController.js'
+import { createChat, getChatMessages, addUserToChat, removeUsersFromChat, getChats } from '../controllers/chatController.js'
 import { createMessage, deleteMesssage } from '../controllers/messageController.js';
 
 const router = express.Router();
