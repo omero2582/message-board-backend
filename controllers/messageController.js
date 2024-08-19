@@ -3,6 +3,7 @@ import Message from "../models/Message.js";
 import { matchedData } from "express-validator";
 import asyncHandler from 'express-async-handler';
 import { AuthorizationError, CustomError, NotFoundError } from "../errors/errors.js";
+import UserChat from "../models/UserChat.js";
 
 export const createMessage = asyncHandler(async (req, res, next) => {
   const { content, chatId } = matchedData(req);
@@ -20,7 +21,7 @@ export const createMessage = asyncHandler(async (req, res, next) => {
 
   // Permissions
   // Admins dont skip these checks
-  const isMemberInGroup = chat.isMemberInGroup(req.user.id);
+  const isMemberInGroup = await UserChat.findOne({chat: chatId, user: req.user.id});
   if(!isMemberInGroup){
     throw new AuthorizationError('User does not belong to this group');
   }
@@ -52,7 +53,7 @@ export const deleteMesssage = asyncHandler(async (req, res, next) => {
   // Permissions
   // Admins skip all checks
   if(!req.user.isAdmin){
-    const isMemberInGroup = message.chat.isMemberInGroup(req.user.id);
+    const isMemberInGroup = await UserChat.findOne({chat: message.chat, user: req.user.id});
     if(!isMemberInGroup){
       throw new AuthorizationError('User does not belong to this group');
     }
@@ -73,6 +74,11 @@ export const deleteMesssage = asyncHandler(async (req, res, next) => {
 
   return res.json({result, message})
 });
+
+
+export const markMesssageAsRead = asyncHandler(async (req, res, next) => {
+  // UserMessage
+})
 
   
 // TODO TODO no longer using block commented out below, just here in case for long in future/another proj

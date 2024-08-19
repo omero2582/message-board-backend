@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 import User from "./User.js";
 
+  // const user = await req.user.populate({
+  //   path: 'chats.chat',
+  //   match: { 'chats.isOpened': true }
+  // })
+
 const Schema = mongoose.Schema;
 
 const ChatSchema = new Schema({

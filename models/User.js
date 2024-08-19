@@ -11,13 +11,6 @@ const UserSchema = new Schema({
   // maxLength wont matter on password because I will only store the bycrypt hashed version
   membership: { type: Schema.Types.ObjectId, required: true, ref: 'MembershipType' },
   isAdmin: { type: Boolean, default: false },
-  chats: [{ 
-    _id: false, // TODO maybe just make _id equal the id value below
-    chat: { type: Schema.Types.ObjectId, ref: 'Chat' },
-    isOpened: { type: Boolean, default: true },
-    // nice to have 'isOpened' here, because then I dont have to fetch
-    // any Chats information, unless isOpened is set to true here
-  }]
 }, {timestamps: true});
 
 UserSchema.virtual('fullName').get(function() {
