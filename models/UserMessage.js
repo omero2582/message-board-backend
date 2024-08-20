@@ -7,12 +7,13 @@ const UserMessageSchema = new Schema({
   message: { type: Schema.Types.ObjectId, ref: 'Message', required: true},
   readAt: { type: Date }
 }, {
+  timestamps: false,
   methods : {
 
   },
   statics: {
     
-  }
+  },
 });
 
 const UserMessage = mongoose.model('UserMessage', UserMessageSchema);
